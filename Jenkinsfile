@@ -1,50 +1,37 @@
-env.environment =""
-env.browserName= "firefox"
-
-pipeline {
-agent any 
-
-stages {
-        stage('Checkout Code..') {
-		when {
-                   anyOf { 
-		   branch 'master'; branch 'stg' ; 
-		   }
-	           beforeAgent true
-		   }
-                   steps {
+properties([pipelineTriggers([githubPush()])])
+pipeline{
+		agent any
+	        
+	         stages{
+	              stage('Dev Code Changes') {
+	              
+            steps {
+                
+                checkout([
+                 $class: 'GitSCM',
+                 branches: [[name: 'master'], [name: 'STG']],
+                 userRemoteConfigs: [[
+                    url: 'https://github.com/agupta89/TestDev.git',
+                    credentialsId: '',
+                 ]]
+                ])
+            }
+	              }
+	         stage('Test Code') {
+	             
+				  steps {
 		   echo 'Hello World'
-                   script {			    	
+				  script {			    	
                    if ("${env.GIT_BRANCH}" == "master") {
-                   env.environment = "dev"
-		    } else if("${env.GIT_BRANCH}" == "stg"){
-                   env.environment = "stg"
+                   env.environment = "master"
+		    } else if("${env.GIT_BRANCH}" == "STG"){
+                   env.environment = "STG"
 		    } else {
-                    env.environment = "false"
+                    env.environment = "Dev"
                    }
 		    echo env.environment
-		    checkout([$class: 'GitSCM', branches: [[name: 'master']],doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/agupta89/TestQA.git']]])
-                    
                 }
-		  		
-            }
 }
-
-    stage('Checkout Testing Code') {
-           steps {     
-           wrap([$class: 'Xvfb', additionalOptions: '', assignedLabels: '', autoDisplayName: true, debug: false, shutdownWithBuild: true ,displayNameOffset: 1,installationName: 'Xvfb', parallelBuild: true, screen: '1600x1280x24', timeout: 60])
-           {
-                sh ' mvn -f pom.xml clean install'
-		
-            }
-        }
-    }
-
-      stage('Publish Html Report') {
-            steps {
-                echo 'Extend Report'       
-        }
-
-        }   
+}
 }
 }
